@@ -51,7 +51,7 @@ app.patch('/students/email', (req, res) => {
     res.send('Update Student Information')
 })
 
-// Archive Student
+// Archive Students
 app.patch('/students/email/archive', (req, res) => {
     res.send('Archive Student')
 })
