@@ -1,24 +1,31 @@
 import { Box, useColorModeValue } from "@chakra-ui/react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import HomePage from "../pages/HomePage";
-import Navbar from "../components/Navbar";
 import AdminDashboard from "../pages/AdminDashboard";
+import UserDashboard from "../pages/UserDashboard";
 import { GoogleOAuthProvider } from '@react-oauth/google';
-
+import Navbar from "../components/Navbar";
+import StudentsPage from "../pages/StudentsPage";
 
 function App() {
+  const location = useLocation();
+  const bg = useColorModeValue("gray.50", "gray.900");
 
   return (
-    <Box minH={"100vh"} bg={useColorModeValue("gray.50", "gray.900")} >
+    <Box minH="100vh" bg={bg}>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-        <Navbar />
+        {/* Render Navbar only on the /home path */}
+        {location.pathname === "/home" && <Navbar />}
+
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/user" element={<UserDashboard />} />
+          <Route path="/admin/students" element={<StudentsPage />} />
         </Routes>
       </GoogleOAuthProvider>
-    </Box >
-  )
+    </Box>
+  );
 }
 
-export default App
+export default App;
