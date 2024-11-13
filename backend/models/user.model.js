@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
     role: {
         type: String,
         default: 'user'
@@ -11,11 +16,7 @@ const userSchema = new mongoose.Schema({
     },
     designation: {
         type: String,
-
-    },
-    email: {
-        type: String,
-        required: true,
+        default: ''
     },
     image: {
         type: String,

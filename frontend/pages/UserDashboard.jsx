@@ -45,7 +45,7 @@ const UserDashboard = () => {
 
     const handleLogout = () => {
         console.log("User logged out");
-        navigate('/home');
+        navigate('/');
     };
 
     const downloadCSV = () => {

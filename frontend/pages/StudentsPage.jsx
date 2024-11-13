@@ -6,13 +6,13 @@ const StudentsPage = () => {
     const [students, setStudents] = useState([]);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [designation, setDesignation] = useState('');
     const [editing, setEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
     const toast = useToast();
 
-    const apiUrl = 'http://localhost:5000/api/users'; // Adjust this URL based on your backend
+    const apiUrl = 'http://localhost:5000/api/users'; // Replace with your actual API endpoint
 
-    // Fetch all students from the backend
     useEffect(() => {
         fetchStudents();
     }, []);
@@ -20,36 +20,43 @@ const StudentsPage = () => {
     const fetchStudents = async () => {
         try {
             const response = await axios.get(apiUrl);
-            console.log("Fetched data:", response.data); // Logging the entire response
-            if (Array.isArray(response.data.data)) {
-                setStudents(response.data.data); // Accessing the data array inside the response
+            console.log("Fetched data:", response.data);
+
+            const studentsData = response.data?.data;
+            if (Array.isArray(studentsData)) {
+                // Filter out admin users
+                const filteredStudents = studentsData.filter(student => student.role !== 'admin');
+                setStudents(filteredStudents);
             } else {
-                console.error("Expected array but got:", response.data.data);
-                setStudents([]);
+                console.error("Unexpected response format. Data is not an array:", studentsData);
+                setStudents([]); // Reset to an empty array if the data is invalid
             }
         } catch (error) {
             console.error("Error fetching students:", error);
-            toast({ title: "Failed to load students", status: "error", duration: 2000, isClosable: true });
+            setStudents([]); // Reset to an empty array on error
         }
     };
 
 
+
+
+
     const handleSubmit = async () => {
-        if (name.trim() === "" || email.trim() === "") {
+        if (!name.trim() || !email.trim() || !designation.trim()) {
             toast({ title: "Please fill all fields", status: "error", duration: 2000, isClosable: true });
             return;
         }
 
         try {
-            const payload = { name, email };
-            console.log("Sending payload:", payload); // Log payload to verify
+            const payload = { name, email, designation };
+            console.log("Submitting payload:", payload); // Debug log
 
             if (editing) {
                 await axios.put(`${apiUrl}/${currentId}`, payload);
                 toast({ title: "Student updated successfully", status: "success", duration: 2000, isClosable: true });
             } else {
-                const response = await axios.post(apiUrl, payload); // Make sure payload matches the server's expectations
-                setStudents([...students, response.data.data]);
+                const response = await axios.post(apiUrl, payload);
+                setStudents([...students, response.data]);
                 toast({ title: "Student added successfully", status: "success", duration: 2000, isClosable: true });
             }
             fetchStudents();
@@ -60,16 +67,17 @@ const StudentsPage = () => {
 
         setName('');
         setEmail('');
+        setDesignation('');
         setEditing(false);
         setCurrentId(null);
     };
-
 
     const handleEdit = (student) => {
         setEditing(true);
         setCurrentId(student._id);
         setName(student.name);
         setEmail(student.email);
+        setDesignation(student.designation || '');
     };
 
     const handleDelete = async (id) => {
@@ -86,30 +94,26 @@ const StudentsPage = () => {
     const handleArchive = async (id) => {
         try {
             await axios.patch(`${apiUrl}/archive/${id}`);
-            fetchStudents(); // Refresh the list
-            toast({ title: "Student archived successfully", status: "info", duration: 2000, isClosable: true });
+            toast({ title: "User archived successfully", status: "info", duration: 2000, isClosable: true });
+
+            // Refresh the list after archiving
+            fetchStudents();
         } catch (error) {
-            console.error("Error archiving student:", error.message);
-            toast({ title: "Error archiving student", status: "error", duration: 2000, isClosable: true });
+            console.error("Error archiving user:", error);
+            toast({ title: "Error archiving user", status: "error", duration: 2000, isClosable: true });
         }
     };
+
 
     return (
         <Box p={8}>
             <Heading mb={6}>Students Management</Heading>
 
-            {/* Add/Edit Student Form */}
+            {/* Add/Edit Form */}
             <VStack spacing={4} mb={8}>
-                <Input
-                    placeholder="Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-                <Input
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input placeholder="Designation" value={designation} onChange={(e) => setDesignation(e.target.value)} />
                 <Button onClick={handleSubmit} colorScheme="teal" width="full">
                     {editing ? "Update Student" : "Add Student"}
                 </Button>
@@ -122,26 +126,38 @@ const StudentsPage = () => {
                         <Th>ID</Th>
                         <Th>Name</Th>
                         <Th>Email</Th>
+                        <Th>Designation</Th>
                         <Th>Actions</Th>
                     </Tr>
                 </Thead>
                 <Tbody>
-                    {Array.isArray(students) && students.map((student) => (
-                        <Tr key={student._id}>
-                            <Td>{student._id}</Td>
-                            <Td>{student.name}</Td>
-                            <Td>{student.email}</Td>
-                            <Td>
-                                <Flex gap={2}>
-                                    <Button colorScheme="yellow" onClick={() => handleEdit(student)}>Edit</Button>
-                                    <Button colorScheme="red" onClick={() => handleDelete(student._id)}>Delete</Button>
-                                    <Button colorScheme="purple" onClick={() => handleArchive(student._id)}>
-                                        {student.archived ? "Unarchive" : "Archive"}
-                                    </Button>;
-                                </Flex>
+                    {students.length > 0 ? (
+                        students
+                            .filter((student) => !student.archived) // Only show unarchived users
+                            .map((student) => (
+                                <Tr key={student._id}>
+                                    <Td>{student._id}</Td>
+                                    <Td>{student.name}</Td>
+                                    <Td>{student.email}</Td>
+                                    <Td>{student.designation}</Td>
+                                    <Td>
+                                        <Flex gap={2}>
+                                            <Button colorScheme="yellow" onClick={() => handleEdit(student)}>Edit</Button>
+                                            <Button colorScheme="red" onClick={() => handleDelete(student._id)}>Delete</Button>
+                                            <Button colorScheme="purple" onClick={() => handleArchive(student._id)}>
+                                                Archive
+                                            </Button>
+                                        </Flex>
+                                    </Td>
+                                </Tr>
+                            ))
+                    ) : (
+                        <Tr>
+                            <Td colSpan={5} textAlign="center">
+                                No students found.
                             </Td>
                         </Tr>
-                    ))}
+                    )}
                 </Tbody>
             </Table>
         </Box>

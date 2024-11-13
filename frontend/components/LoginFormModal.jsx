@@ -28,10 +28,11 @@ function LoginFormModal() {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
     const handleGoogleSuccess = async (response) => {
+        console.log("Google Login Success:", response);
         const token = response.credential;
 
         try {
-            const res = await fetch('api/auth/google', {
+            const res = await fetch('http://localhost:5000/api/auth/google', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -6,6 +6,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const googleLogin = async (req, res) => {
     const { token } = req.body;
+    console.log("Received Token:", token);
 
     try {
         const ticket = await client.verifyIdToken({
@@ -13,6 +14,8 @@ export const googleLogin = async (req, res) => {
             audience: process.env.GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
+        console.log("Google Payload:", payload);
+
         const { email, name, picture } = payload;
 
         // Check if user already exists in the database
@@ -32,10 +35,10 @@ export const googleLogin = async (req, res) => {
 
         res.status(200).json({
             message: 'Google login successful',
-            user: { email: user.email, role: user.role, name: user.name, designation: user.designation, image: user.image }
+            user: { email: user.email, role: user.role, name: user.name, designation: user.designation, image: user.image },
         });
     } catch (error) {
-        console.error("Error in googleLogin:", error);
+        console.error("Error in googleLogin:", error); // Add this log
         res.status(401).json({ message: 'Google login failed', error });
     }
 };

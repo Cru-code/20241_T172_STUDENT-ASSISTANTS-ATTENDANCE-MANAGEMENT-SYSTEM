@@ -25,7 +25,7 @@ const AdminDashboard = () => {
 
     const handleLogout = () => {
         console.log("User logged out");
-        navigate('/home');
+        navigate('/');
     };
 
     // Function to render the main content based on selected link

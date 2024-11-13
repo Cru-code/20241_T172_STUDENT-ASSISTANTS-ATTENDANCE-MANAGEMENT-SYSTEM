@@ -6,6 +6,7 @@ import UserDashboard from "../pages/UserDashboard";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from "../components/Navbar";
 import StudentsPage from "../pages/StudentsPage";
+import ArchivedUsersPage from "../pages/ArchivesPage";
 
 function App() {
   const location = useLocation();
@@ -15,13 +16,14 @@ function App() {
     <Box minH="100vh" bg={bg}>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
         {/* Render Navbar only on the /home path */}
-        {location.pathname === "/home" && <Navbar />}
+        {location.pathname === "/" && <Navbar />}
 
         <Routes>
-          <Route path="/home" element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/user" element={<UserDashboard />} />
           <Route path="/admin/students" element={<StudentsPage />} />
+          <Route path="/admin/archived" element={<ArchivedUsersPage />} />
         </Routes>
       </GoogleOAuthProvider>
     </Box>

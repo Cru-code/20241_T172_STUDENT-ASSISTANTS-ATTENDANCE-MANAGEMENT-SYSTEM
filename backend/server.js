@@ -11,13 +11,14 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-const CorsOptions = {
-    origin: ['http://localhost:5173'],
-    credentials: true
-}
+const corsOptions = {
+    origin: 'http://localhost:5173', // Frontend origin
+    credentials: true,
+};
+app.use(cors(corsOptions));
 
 app.use(express.json()); // alows json data in the req.body
-app.use(cors(CorsOptions));
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
