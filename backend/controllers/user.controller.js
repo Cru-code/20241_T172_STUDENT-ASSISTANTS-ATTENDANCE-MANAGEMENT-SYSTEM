@@ -1,36 +1,59 @@
 import User from '../models/user.model.js';
 import mongoose from "mongoose";
 
+
 export const getUsers = async (req, res) => {
+    console.log("GET /api/user hit"); // Debugging log
     try {
-        // Exclude users with role: 'admin'
         const users = await User.find({ role: { $ne: 'admin' } });
         res.status(200).json({ success: true, data: users });
     } catch (error) {
-        console.error("Error in fetching users:", error.message);
+        console.error("Error fetching users:", error.message);
         res.status(500).json({ success: false, message: "Server Error" });
     }
 };
 
 
-
 export const createUsers = async (req, res) => {
-    const user = req.body;
+    const { name, email, designation } = req.body;
 
-    console.log("Received user data:", user); // Log incoming data
-
-    if (!user.name || !user.email) {
-        return res.status(400).json({ success: false, message: "Please provide all fields" });
+    // Check if all required fields are provided
+    if (!name || !email || !designation) {
+        return res.status(400).json({
+            success: false,
+            message: "Please provide all fields",
+        });
     }
 
-    const newUser = new User(user);
-
     try {
+        // Check if the email already exists in the database
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already exists",
+            });
+        }
+
+        // Create a new user
+        const newUser = new User({ name, email, designation });
+
+        // Save the new user to the database
         await newUser.save();
-        res.status(201).json({ success: true, data: newUser });
+
+        // Return the created user in the response
+        return res.status(201).json({
+            success: true,
+            data: newUser,
+        });
     } catch (error) {
-        console.error("Error in Create user:", error.message); // Log detailed error message
-        res.status(500).json({ success: false, message: "Server Error" });
+        console.error("Error in Create User:", error.message);
+
+        // Return server error if an exception occurs
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+        });
     }
 };
 

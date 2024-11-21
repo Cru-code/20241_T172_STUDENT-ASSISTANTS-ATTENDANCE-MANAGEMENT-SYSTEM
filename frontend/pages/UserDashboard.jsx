@@ -26,22 +26,18 @@ import { DownloadIcon } from '@chakra-ui/icons';
 const UserDashboard = () => {
     const { colorMode, toggleColorMode } = useColorMode();
     const navigate = useNavigate();
-    const [attendanceLog, setAttendanceLog] = useState([]);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
-        // Fetch attendance data from the backend
-        const fetchAttendance = async () => {
-            try {
-                const response = await fetch('/api/attendance');
-                const data = await response.json();
-                setAttendanceLog(data);
-            } catch (error) {
-                console.error('Error fetching attendance log:', error);
-            }
-        };
-
-        fetchAttendance();
-    }, []);
+        // Load user data from local storage
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser) {
+            setUser(storedUser);
+        } else {
+            // If no user data is found, redirect to login
+            navigate('/');
+        }
+    }, [navigate]);
 
     const handleLogout = () => {
         console.log("User logged out");
@@ -85,7 +81,7 @@ const UserDashboard = () => {
                     bgGradient="linear(to-r, cyan.400, blue.500)"
                     bgClip="text"
                 >
-                    <Link to="/">Student Assistant Attendance Hub</Link>
+                    Student Assistant Attendance Hub
                 </Text>
 
                 <HStack spacing={2} alignItems="center">
@@ -108,9 +104,14 @@ const UserDashboard = () => {
                 >
                     {/* User Profile Section */}
                     <VStack spacing={4} mb={10} align="center">
-                        <Avatar name="User" size="xl" mx="auto" />
-                        <Text fontSize="lg" fontWeight="bold">User Name</Text>
-                        <Text fontSize="sm" color="blue.200">User Role</Text>
+                        <Avatar
+                            name={user?.name}
+                            src={user?.profileImage}
+                            size="xl"
+                            mx="auto"
+                        />
+                        <Text fontSize="lg" fontWeight="bold">{user?.name || 'Guest User'}</Text>
+                        <Text fontSize="sm" color="blue.200">{user?.email || 'No Email Available'}</Text>
                     </VStack>
 
                     {/* Sidebar Links */}
@@ -159,13 +160,7 @@ const UserDashboard = () => {
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {attendanceLog.map((log, index) => (
-                                <Tr key={index}>
-                                    <Td>{log.date}</Td>
-                                    <Td>{log.timeIn}</Td>
-                                    <Td>{log.timeOut}</Td>
-                                </Tr>
-                            ))}
+
                         </Tbody>
                     </Table>
 

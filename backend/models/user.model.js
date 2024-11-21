@@ -1,34 +1,50 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const userSchema = new mongoose.Schema({
-    email: {
-        type: String,
-        required: true,
-        unique: true
+const userSchema = new mongoose.Schema(
+    {
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            match: [
+                /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+                'Please fill a valid email address',
+            ],
+        },
+        role: {
+            type: String,
+            default: 'user',
+        },
+        name: {
+            type: String,
+        },
+        designation: {
+            type: String,
+            default: '',
+        },
+        image: {
+            type: String,
+        },
+        archived: {
+            type: Boolean,
+            default: false,
+        },
+        password: {
+            type: String,
+            required: false,
+        },
+        resetToken: {
+            type: String,
+            default: null
+        },
     },
-    role: {
-        type: String,
-        default: 'user'
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    designation: {
-        type: String,
-        default: ''
-    },
-    image: {
-        type: String,
+    {
+        timestamps: true, // Automatically add createdAt and updatedAt
+    }
+);
 
-    },
-    archived: {
-        type: Boolean,
-        default: false
-    },
-}, {
-    timestamps: true // createdAt,
-});
+// Index to improve email-based search performance
+userSchema.index({ email: 1 });
 
 const User = mongoose.model('User', userSchema);
 

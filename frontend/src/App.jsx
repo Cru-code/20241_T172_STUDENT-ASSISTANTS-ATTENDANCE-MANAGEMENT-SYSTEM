@@ -7,6 +7,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from "../components/Navbar";
 import StudentsPage from "../pages/StudentsPage";
 import ArchivedUsersPage from "../pages/ArchivesPage";
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import AttendancePage from "../pages/AttendancePage";
+
 
 function App() {
   const location = useLocation();
@@ -20,10 +23,12 @@ function App() {
 
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/user" element={<UserDashboard />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/user/dashboard" element={<UserDashboard />} />
           <Route path="/admin/students" element={<StudentsPage />} />
           <Route path="/admin/archived" element={<ArchivedUsersPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordModal />} />
+          <Route path="/admin/attendance" element={<AttendancePage />} />
         </Routes>
       </GoogleOAuthProvider>
     </Box>

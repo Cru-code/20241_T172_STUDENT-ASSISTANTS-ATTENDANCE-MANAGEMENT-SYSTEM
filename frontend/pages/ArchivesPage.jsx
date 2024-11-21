@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Table, Tbody, Td, Th, Thead, Tr, Box, Heading, Button, useToast } from '@chakra-ui/react';
+import { Table, Tbody, Td, Th, Thead, Tr, Box, Heading, Button, useToast, Flex, useBreakpointValue, Text } from '@chakra-ui/react';
 
 const ArchivedUsersPage = () => {
-    const apiUrl = 'http://localhost:5000/api/users'; // Replace with the correct API URL
+    const apiUrl = 'http://localhost:5000/api/user'; // Replace with the correct API URL
     const [archivedUsers, setArchivedUsers] = useState([]);
     const toast = useToast();
+    const isSmallScreen = useBreakpointValue({ base: true, md: false }); // For responsiveness
 
     useEffect(() => {
         fetchArchivedUsers();
@@ -35,54 +36,80 @@ const ArchivedUsersPage = () => {
         try {
             await axios.patch(`${apiUrl}/unarchive/${id}`);
             toast({ title: "User unarchived successfully", status: "info", duration: 2000, isClosable: true });
-
-            // Refresh archived users list
-            fetchArchivedUsers();
+            fetchArchivedUsers(); // Refresh the list
         } catch (error) {
             console.error("Error unarchiving user:", error);
             toast({ title: "Error unarchiving user", status: "error", duration: 2000, isClosable: true });
         }
     };
 
-
+    const handleDelete = async (id) => {
+        try {
+            await axios.delete(`${apiUrl}/${id}`);
+            setArchivedUsers(archivedUsers.filter(user => user._id !== id)); // Remove user from local state
+            toast({ title: "User deleted", status: "info", duration: 2000, isClosable: true });
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            toast({ title: "Error deleting user", status: "error", duration: 2000, isClosable: true });
+        }
+    };
 
     return (
-        <Box p={8}>
-            <Heading mb={6}>Archived Users</Heading>
-            <Table variant="simple">
-                <Thead>
-                    <Tr>
-                        <Th>ID</Th>
-                        <Th>Name</Th>
-                        <Th>Email</Th>
-                        <Th>Designation</Th>
-                        <Th>Actions</Th>
-                    </Tr>
-                </Thead>
-                <Tbody>
-                    {archivedUsers.length > 0 ? (
-                        archivedUsers.map((user) => (
-                            <Tr key={user._id}>
-                                <Td>{user._id}</Td>
-                                <Td>{user.name}</Td>
-                                <Td>{user.email}</Td>
-                                <Td>{user.designation}</Td>
-                                <Td>
-                                    <Button colorScheme="green" onClick={() => handleUnarchive(user._id)}>
-                                        Unarchive
-                                    </Button>
+        <Box p={4} maxW="container.xl" mx="auto">
+            <Heading mb={6} textAlign={isSmallScreen ? "center" : "left"} fontSize={isSmallScreen ? "lg" : "2xl"}>
+                Archived Users
+            </Heading>
+
+            {/* Responsive Table Container */}
+            <Box overflowX="auto">
+                <Table variant="simple" size={isSmallScreen ? "sm" : "md"}>
+                    <Thead>
+                        <Tr>
+                            <Th>ID</Th>
+                            <Th>Name</Th>
+                            <Th>Email</Th>
+                            <Th>Designation</Th>
+                            <Th>Actions</Th>
+                        </Tr>
+                    </Thead>
+                    <Tbody>
+                        {archivedUsers.length > 0 ? (
+                            archivedUsers.map((user) => (
+                                <Tr key={user._id}>
+                                    <Td>{user._id}</Td>
+                                    <Td>{user.name}</Td>
+                                    <Td>{user.email}</Td>
+                                    <Td>{user.designation}</Td>
+                                    <Td>
+                                        <Flex gap={2} wrap={isSmallScreen ? "wrap" : "nowrap"}>
+                                            <Button
+                                                colorScheme="green"
+                                                size={isSmallScreen ? "sm" : "md"}
+                                                onClick={() => handleUnarchive(user._id)}
+                                            >
+                                                Unarchive
+                                            </Button>
+                                            <Button
+                                                colorScheme="red"
+                                                size={isSmallScreen ? "sm" : "md"}
+                                                onClick={() => handleDelete(user._id)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </Flex>
+                                    </Td>
+                                </Tr>
+                            ))
+                        ) : (
+                            <Tr>
+                                <Td colSpan={5} textAlign="center">
+                                    <Text fontSize={isSmallScreen ? "sm" : "md"}>No archived users found.</Text>
                                 </Td>
                             </Tr>
-                        ))
-                    ) : (
-                        <Tr>
-                            <Td colSpan={5} textAlign="center">
-                                No archived users found.
-                            </Td>
-                        </Tr>
-                    )}
-                </Tbody>
-            </Table>
+                        )}
+                    </Tbody>
+                </Table>
+            </Box>
         </Box>
     );
 };
