@@ -3,38 +3,40 @@ import axios from 'axios';
 import {
     Box, Button, Flex, Heading, Input, Table, Tbody, Td, Th, Thead, Tr, VStack, useToast,
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, useDisclosure,
+    AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogBody, AlertDialogFooter,
     useBreakpointValue, Text
 } from '@chakra-ui/react';
 import Pagination from "../components/Pagination"; // Adjust the path for your pagination component
 
 const StudentsPage = () => {
     const [students, setStudents] = useState([]);
-    const [search, setSearch] = useState(''); // Search term for the search bar
+    const [view, setView] = useState('active'); // View state: 'active' or 'archived'
+    const [search, setSearch] = useState('');
     const [editing, setEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
-    const [name, setName] = useState(''); // Separate state for name input in the modal
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [designation, setDesignation] = useState('');
-    const [currentPage, setCurrentPage] = useState(1); // Track current page
-    const studentsPerPage = 8; // Number of students per page
+    const [currentPage, setCurrentPage] = useState(1);
+    const [deleteId, setDeleteId] = useState(null);
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isAlertOpen, onOpen: onAlertOpen, onClose: onAlertClose } = useDisclosure();
+    const cancelRef = React.useRef();
+    const studentsPerPage = 8;
     const toast = useToast();
-    const { isOpen, onOpen, onClose } = useDisclosure(); // Modal control
-    const isSmallScreen = useBreakpointValue({ base: true, md: false }); // Responsive logic
+    const isSmallScreen = useBreakpointValue({ base: true, md: false });
 
     const apiUrl = 'http://localhost:5000/api/user';
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [view]); // Refetch when view changes
 
     const fetchStudents = async () => {
         try {
             const response = await axios.get(apiUrl);
-            const studentsData = response.data?.data;
-            if (Array.isArray(studentsData)) {
-                const filteredStudents = studentsData.filter(student => student.role !== 'admin');
-                setStudents(filteredStudents);
-            }
+            const studentsData = response.data?.data || [];
+            setStudents(studentsData);
         } catch (error) {
             console.error("Error fetching students:", error);
             setStudents([]);
@@ -61,14 +63,11 @@ const StudentsPage = () => {
                 await axios.put(`${apiUrl}/${currentId}`, payload);
                 toast({ title: "Student updated successfully", status: "success", duration: 2000, isClosable: true });
             } else {
-                const response = await axios.post(apiUrl, payload);
-                if (response.data) {
-                    setStudents((prevStudents) => [...prevStudents, response.data]);
-                }
+                await axios.post(apiUrl, payload);
                 toast({ title: "Student added successfully", status: "success", duration: 2000, isClosable: true });
             }
             fetchStudents();
-            onClose(); // Close the modal after submission
+            onClose();
         } catch (error) {
             console.error("Error saving student:", error);
             toast({ title: "Error saving student", status: "error", duration: 2000, isClosable: true });
@@ -80,47 +79,76 @@ const StudentsPage = () => {
     const handleEdit = (student) => {
         setEditing(true);
         setCurrentId(student._id);
-        setName(student.name || ''); // Pre-fill name with student data
+        setName(student.name || '');
         setEmail(student.email || '');
         setDesignation(student.designation || '');
-        onOpen(); // Open the modal in edit mode
+        onOpen();
     };
 
-    const handleArchive = async (id) => {
+    const handleDelete = async () => {
+        if (!deleteId) return;
+
         try {
-            await axios.patch(`${apiUrl}/archive/${id}`);
-            toast({ title: "User archived successfully", status: "info", duration: 2000, isClosable: true });
-            fetchStudents();
+            await axios.delete(`${apiUrl}/${deleteId}`);
+            setStudents((prev) => prev.filter((student) => student._id !== deleteId));
+            toast({ title: "Student deleted successfully", status: "success", duration: 2000, isClosable: true });
         } catch (error) {
-            console.error("Error archiving user:", error);
-            toast({ title: "Error archiving user", status: "error", duration: 2000, isClosable: true });
+            console.error("Error deleting user:", error);
+            toast({ title: "Error deleting user", status: "error", duration: 2000, isClosable: true });
+        } finally {
+            setDeleteId(null);
+            onAlertClose();
         }
     };
 
-    // Filter students based on the search term and ensure they are not archived
+    const handleArchiveToggle = async (id, archived) => {
+        try {
+            const endpoint = archived ? `${apiUrl}/unarchive/${id}` : `${apiUrl}/archive/${id}`;
+            await axios.patch(endpoint);
+            toast({
+                title: `User ${archived ? 'unarchived' : 'archived'} successfully`,
+                status: "info",
+                duration: 2000,
+                isClosable: true,
+            });
+            fetchStudents();
+        } catch (error) {
+            console.error("Error toggling archive status:", error);
+            toast({ title: "Error toggling archive status", status: "error", duration: 2000, isClosable: true });
+        }
+    };
+
     const filteredStudents = students.filter((student) => {
         const searchLower = search.toLowerCase();
-        return (
-            (student.name?.toLowerCase().includes(searchLower) || // Optional chaining
-                student.email?.toLowerCase().includes(searchLower) ||
-                student.designation?.toLowerCase().includes(searchLower)) &&
-            !student.archived
-        );
+        const matchesSearch = student.name?.toLowerCase().includes(searchLower)
+            || student.email?.toLowerCase().includes(searchLower)
+            || student.designation?.toLowerCase().includes(searchLower);
+        return view === 'active'
+            ? matchesSearch && !student.archived
+            : matchesSearch && student.archived;
     });
 
-    // Pagination logic
     const indexOfLastStudent = currentPage * studentsPerPage;
     const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
     const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
     const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
+    useEffect(() => {
+        if (search.trim()) setCurrentPage(1); // Reset to first page when searching
+    }, [search]);
+
+    const handleViewChange = () => {
+        setView(view === 'active' ? 'archived' : 'active');
+        setCurrentPage(1); // Reset page to 1 when switching views
+    };
+
     return (
         <Box p={4} maxW="container.xl" mx="auto">
-            {/* Header: Students Management, Search Bar, and Add Button */}
+            {/* Header */}
             <Flex justify="space-between" align="center" mb={6}>
-                <Heading fontSize={isSmallScreen ? "xl" : "2xl"}>Students Management</Heading>
-
-                {/* Search Bar and Add Student Button */}
+                <Heading fontSize={isSmallScreen ? "xl" : "2xl"}>
+                    {view === 'active' ? "Students Management" : "Archived Users"}
+                </Heading>
                 <Flex gap={4} align="center">
                     <Input
                         placeholder="Search by Name, Email, or Designation"
@@ -128,50 +156,22 @@ const StudentsPage = () => {
                         onChange={(e) => setSearch(e.target.value)}
                         width={isSmallScreen ? "200px" : "300px"}
                     />
-                    <Button
-                        onClick={() => {
-                            resetForm(); // Reset form fields before opening modal
-                            onOpen();
-                        }}
-                        colorScheme="teal"
-                    >
-                        Add Student
+                    {view === 'active' && (
+                        <Button
+                            onClick={() => {
+                                resetForm();
+                                onOpen();
+                            }}
+                            colorScheme="teal"
+                        >
+                            Add Student
+                        </Button>
+                    )}
+                    <Button onClick={handleViewChange} colorScheme="purple">
+                        {view === 'active' ? "View Archived" : "View Active"}
                     </Button>
                 </Flex>
             </Flex>
-
-            {/* Add/Edit Student Modal */}
-            <Modal isOpen={isOpen} onClose={onClose}>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>{editing ? "Edit Student" : "Add Student"}</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody>
-                        <VStack spacing={4}>
-                            <Input
-                                placeholder="Name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)} // Use `name` state for this input
-                            />
-                            <Input
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                            <Input
-                                placeholder="Designation"
-                                value={designation}
-                                onChange={(e) => setDesignation(e.target.value)}
-                            />
-                        </VStack>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button colorScheme="teal" onClick={handleSubmit} width="full">
-                            {editing ? "Update Student" : "Add Student"}
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
 
             {/* Students Table */}
             <Box overflowX="auto">
@@ -194,13 +194,46 @@ const StudentsPage = () => {
                                     <Td>{student.email}</Td>
                                     <Td>{student.designation}</Td>
                                     <Td>
-                                        <Flex gap={2} wrap="wrap">
-                                            <Button colorScheme="yellow" onClick={() => handleEdit(student)} size={isSmallScreen ? "sm" : "md"}>
-                                                Edit
-                                            </Button>
-                                            <Button colorScheme="purple" onClick={() => handleArchive(student._id)} size={isSmallScreen ? "sm" : "md"}>
-                                                Archive
-                                            </Button>
+                                        <Flex gap={4}>
+                                            {view === 'active' && (
+                                                <>
+                                                    <Button
+                                                        colorScheme="yellow"
+                                                        onClick={() => handleEdit(student)}
+                                                        size={isSmallScreen ? "sm" : "md"}
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        colorScheme="purple"
+                                                        onClick={() => handleArchiveToggle(student._id, false)}
+                                                        size={isSmallScreen ? "sm" : "md"}
+                                                    >
+                                                        Archive
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {view === 'archived' && (
+                                                <>
+                                                    <Button
+                                                        colorScheme="green"
+                                                        onClick={() => handleArchiveToggle(student._id, true)}
+                                                        size={isSmallScreen ? "sm" : "md"}
+                                                    >
+                                                        Unarchive
+                                                    </Button>
+                                                    <Button
+                                                        colorScheme="red"
+                                                        onClick={() => {
+                                                            setDeleteId(student._id);
+                                                            onAlertOpen();
+                                                        }}
+                                                        size={isSmallScreen ? "sm" : "md"}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </>
+                                            )}
                                         </Flex>
                                     </Td>
                                 </Tr>
@@ -208,7 +241,7 @@ const StudentsPage = () => {
                         ) : (
                             <Tr>
                                 <Td colSpan={5} textAlign="center">
-                                    No students found.
+                                    No {view === 'active' ? 'students' : 'archived users'} found.
                                 </Td>
                             </Tr>
                         )}
@@ -224,6 +257,65 @@ const StudentsPage = () => {
                     onPageChange={(page) => setCurrentPage(page)}
                 />
             )}
+
+            {/* Add/Edit Modal */}
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>{editing ? "Edit Student" : "Add Student"}</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <VStack spacing={4}>
+                            <Input
+                                placeholder="Name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            <Input
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            <Input
+                                placeholder="Designation"
+                                value={designation}
+                                onChange={(e) => setDesignation(e.target.value)}
+                            />
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme="teal" onClick={handleSubmit} width="full">
+                            {editing ? "Update Student" : "Add Student"}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* AlertDialog for Delete Confirmation */}
+            <AlertDialog
+                isOpen={isAlertOpen}
+                leastDestructiveRef={cancelRef}
+                onClose={onAlertClose}
+            >
+                <AlertDialogOverlay>
+                    <AlertDialogContent>
+                        <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                            Delete User
+                        </AlertDialogHeader>
+                        <AlertDialogBody>
+                            Are you sure you want to delete this user? This action cannot be undone.
+                        </AlertDialogBody>
+                        <AlertDialogFooter>
+                            <Button ref={cancelRef} onClick={onAlertClose}>
+                                Cancel
+                            </Button>
+                            <Button colorScheme="red" onClick={handleDelete} ml={3}>
+                                Delete
+                            </Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialogOverlay>
+            </AlertDialog>
         </Box>
     );
 };

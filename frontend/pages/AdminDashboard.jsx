@@ -46,8 +46,6 @@ const AdminDashboard = () => {
                 return <StudentsPage />;
             case 'attendance':
                 return <AttendancePage />;
-            case 'archives':
-                return <ArchivesPage />;
             default:
                 return (
                     <>
@@ -134,14 +132,7 @@ const AdminDashboard = () => {
                         >
                             Attendance
                         </Button>
-                        <Button
-                            variant="ghost"
-                            w="full"
-                            justifyContent="start"
-                            onClick={() => setSelectedContent('archives')}
-                        >
-                            Archives
-                        </Button>
+
                     </VStack>
                 </Box>
 

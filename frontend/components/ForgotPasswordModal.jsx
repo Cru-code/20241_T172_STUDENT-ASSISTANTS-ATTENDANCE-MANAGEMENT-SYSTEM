@@ -11,11 +11,13 @@ import {
     FormControl,
     FormLabel,
     VStack,
+    HStack,
     Input,
     useDisclosure,
     useToast,
+    Spinner,
 } from '@chakra-ui/react';
-import { PinInput, PinInputField } from '@chakra-ui/react';  // Import PinInput from Chakra UI
+import { PinInput, PinInputField } from '@chakra-ui/react';
 
 function ForgotPasswordModal() {
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -23,9 +25,21 @@ function ForgotPasswordModal() {
     const [email, setEmail] = useState('');
     const [resetCode, setResetCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [isSending, setIsSending] = useState(false); // Track if the reset code is being sent
     const toast = useToast();
 
+    const handleModalClose = () => {
+        // Reset everything when the modal is closed
+        setStep(1);
+        setEmail('');
+        setResetCode('');
+        setNewPassword('');
+        setIsSending(false);
+        onClose();
+    };
+
     const sendResetCode = async () => {
+        setIsSending(true); // Disable button and show loading state
         try {
             const res = await fetch('/api/auth/send-reset-code', {
                 method: 'POST',
@@ -42,6 +56,8 @@ function ForgotPasswordModal() {
             }
         } catch (error) {
             toast({ title: 'Failed to send reset code.', status: 'error' });
+        } finally {
+            setIsSending(false); // Re-enable button if necessary for retries
         }
     };
 
@@ -76,7 +92,7 @@ function ForgotPasswordModal() {
             const data = await res.json();
             if (res.ok) {
                 toast({ title: 'Password reset successful.', status: 'success' });
-                onClose();
+                handleModalClose(); // Close the modal after resetting
             } else {
                 toast({ title: data.message, status: 'error' });
             }
@@ -90,11 +106,11 @@ function ForgotPasswordModal() {
             <Button variant="link" colorScheme="blue" onClick={onOpen}>
                 Forgot Password?
             </Button>
-            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+            <Modal isOpen={isOpen} onClose={handleModalClose} isCentered>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Reset Your Password</ModalHeader>
-                    <ModalCloseButton />
+                    <ModalCloseButton onClick={handleModalClose} />
                     <ModalBody>
                         {step === 1 && (
                             <VStack spacing={4}>
@@ -107,48 +123,40 @@ function ForgotPasswordModal() {
                                         placeholder="Enter your email"
                                     />
                                 </FormControl>
-                                <Button onClick={sendResetCode} colorScheme="blue" width="full">
-                                    Send Reset Code
-                                </Button>
+                                {!isSending ? (
+                                    <Button onClick={sendResetCode} colorScheme="blue" width="full">
+                                        Send Reset Code
+                                    </Button>
+                                ) : (
+                                    <Button isDisabled colorScheme="blue" width="full">
+                                        <Spinner size="sm" mr={2} /> Sending...
+                                    </Button>
+                                )}
                             </VStack>
                         )}
                         {step === 2 && (
-                            <VStack spacing={4}>
+                            <VStack spacing={6}>
                                 <FormControl>
                                     <FormLabel>Reset Code</FormLabel>
-                                    <PinInput
-                                        otp
-                                        value={resetCode}
-                                        onChange={(value) => setResetCode(value)}
-                                    >
-                                        <PinInputField size="lg"
-                                            onPaste={(e) => {
-                                                const pastedValue = e.clipboardData.getData('text').trim();
-                                                if (/^[a-zA-Z0-9]{6}$/.test(pastedValue)) {
-                                                    setResetCode(pastedValue);
-                                                } else {
-                                                    toast({
-                                                        title: 'Invalid code format. Please enter a 6-character alphanumeric code.',
-                                                        status: 'error',
-                                                    });
-                                                }
-                                                e.preventDefault();
-                                            }}
-                                        />
-                                        <PinInputField size="lg" />
-                                        <PinInputField size="lg" />
-                                        <PinInputField size="lg" />
-                                        <PinInputField size="lg" />
-                                        <PinInputField size="lg" />
-                                    </PinInput>
+                                    <HStack justifyContent="center" spacing={4}>
+                                        <PinInput
+                                            otp
+                                            value={resetCode}
+                                            onChange={(value) => setResetCode(value)}
+                                            type="alphanumeric"
+                                            size="lg"
+                                        >
+                                            {[...Array(6)].map((_, i) => (
+                                                <PinInputField key={i} />
+                                            ))}
+                                        </PinInput>
+                                    </HStack>
                                 </FormControl>
                                 <Button onClick={verifyResetCode} colorScheme="blue" width="full">
                                     Verify Code
                                 </Button>
                             </VStack>
                         )}
-
-
                         {step === 3 && (
                             <VStack spacing={4}>
                                 <FormControl>
@@ -167,7 +175,7 @@ function ForgotPasswordModal() {
                         )}
                     </ModalBody>
                     <ModalFooter>
-                        <Button onClick={onClose} variant="ghost">
+                        <Button onClick={handleModalClose} variant="ghost">
                             Cancel
                         </Button>
                     </ModalFooter>

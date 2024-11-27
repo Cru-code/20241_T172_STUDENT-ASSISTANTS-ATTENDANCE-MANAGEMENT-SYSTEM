@@ -9,6 +9,7 @@ import gmailRoutes from './routes/gmail.routes.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import helmet from 'helmet';
+import { errorMiddleware } from './middlewares/errorMiddleware.js';
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use(
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/gmail', gmailRoutes);
+app.use(errorMiddleware);
 
 // Serve static files if in production
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
