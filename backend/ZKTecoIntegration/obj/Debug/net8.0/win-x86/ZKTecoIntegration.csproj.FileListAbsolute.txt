@@ -1,0 +1,8 @@
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.csproj.AssemblyReference.cache
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.GeneratedMSBuildEditorConfig.editorconfig
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.AssemblyInfoInputs.cache
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.AssemblyInfo.cs
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.csproj.CoreCompileInputs.cache
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.MvcApplicationPartsAssemblyInfo.cs
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.MvcApplicationPartsAssemblyInfo.cache
+D:\COLLAB\backend\ZKTecoIntegration\obj\Debug\net8.0\win-x86\ZKTecoIntegration.sourcelink.json

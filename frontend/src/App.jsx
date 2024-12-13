@@ -54,6 +54,7 @@ const App = () => {
             element={isAuthenticated() ? <AttendancePage /> : <Navigate to="/" />}
           />
 
+
           {/* Protected User Routes */}
           <Route
             path="/user/dashboard"
